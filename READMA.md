@@ -1,3 +1,27 @@
+# AKS-Sanbox
+
+### Installation
+
+#### Resource Summary weekly
+- kubecost `http://sandbox.aks-cost.central.co.th/`
+  - cost per namespace
+  - cost total in cluster
+
+
+```bash
+helm repo add kubecost https://kubecost.github.io/cost-analyzer/
+helm repo update
+helm install kubecost kubecost/cost-analyzer -n kube-system --set kubecostToken="aW5mby5kdmdhbWVyQGdtYWlsLmNvbQ==xm343yadf98"
+# helm upgrade kubecost kubecost/cost-analyzer -n kube-system
+
+# check kubecost dashboard 
+kubectl port-forward --namespace kube-system deployment/kubecost-cost-analyzer 9090
+
+
+```
+
+
+
 ### Role & Rolebinding AKS
 
 **get ObjectId in Group**
@@ -15,7 +39,7 @@ az ad group member list --group AZ_PRODUCTMGMT_TEAM --query "[?contains(mail,'Th
 
 Role 
 ```bash
-namespace="box-copter"
+namespace="AKSTeamRanger"
 
 tsv=$(az ad group show --group "AKS Team Ranger" --query "{id:objectId,name:mailNickname,mail:mail}" -o tsv)
 objectId=$(echo $tsv | awk '{print $1}')
@@ -85,5 +109,6 @@ subjects:
   name: $objectId
 - kind: ServiceAccount
   name: $saName
+  namespace: $namespace
 EOF
 ```
