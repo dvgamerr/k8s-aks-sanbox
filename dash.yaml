@@ -6,17 +6,24 @@ ingress:
   enabled: true
   paths:
     - /aks-team-ranger
+
   hosts:
-    - k8s.touno.io
+    - sanbox.aks-team.touno.io
+  tls:
+    - secretName: sanbox.aks-team
+      hosts:
+        - sanbox.aks-team.touno.io
+
   annotations:
-    kubernetes.io/ingress.class: nginx
+    kubernetes.io/ingress.class: dashboard
+    cert-manager.io/cluster-issuer: letsencrypt
   
 extraArgs:
   - --enable-skip-login
   - --enable-insecure-login
 
 metricsScraper:
-  enabled: false
+  enabled: true
 
 rbac:
   create: false
@@ -24,7 +31,7 @@ rbac:
 
 serviceAccount:
   create: false
-  name: team.aks-team-ranger
+  name: team-aks-team-ranger
 
 settings:
   clusterName: "AKS Team Ranger"
