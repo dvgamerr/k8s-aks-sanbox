@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aks-team-ranger
+  labels:
+    env: sandbox
+    aks-team-ranger: ''
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: team-aks-team-ranger
+  namespace: aks-team-ranger
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: team:aks-team-ranger
+  namespace: aks-team-ranger
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: team:aks-team-ranger
+  namespace: aks-team-ranger
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: team:aks-team-ranger
+subjects:
+- kind: Group
+  name: 6d39199b-2dd6-43f4-92d6-7874d1435285
+- kind: ServiceAccount
+  name: team-aks-team-ranger
+  namespace: aks-team-ranger
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: team:aks-team-ranger
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: user:namespaces:list
+subjects:
+- kind: Group
+  name: 6d39199b-2dd6-43f4-92d6-7874d1435285
+- kind: ServiceAccount
+  name: team-aks-team-ranger
+  namespace: aks-team-ranger
