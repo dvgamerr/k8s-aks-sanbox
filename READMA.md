@@ -20,16 +20,30 @@ az aks get-credentials --resource-group rg-cg-sea-aks-sandbox --name cg-aks-sand
 
 ```bash
 helm repo add kubecost https://kubecost.github.io/cost-analyzer/
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+helm repo add jetstack https://charts.jetstack.io
 helm repo update
+
+
 helm install kubecost kubecost/cost-analyzer -n kube-system --set kubecostToken="aW5mby5kdmdhbWVyQGdtYWlsLmNvbQ==xm343yadf98"
 # helm upgrade kubecost kubecost/cost-analyzer -n kube-system
 
 ### check kubecost dashboard 
 # kubectl port-forward --namespace kube-system deployment/kubecost-cost-analyzer 9090
 
-helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
 
-helm install --name dashboard --namespace [team-name] -f k8s-dashboard.yaml kubernetes-dashboard/kubernetes-dashboard
+helm install dash -n kube-public --set controller.ingressClass=dashboard ingress-nginx/ingress-nginx
+
+# disabled cert
+kubectl label namespace default cert-manager.io/disable-validation=true
+kubectl label namespace kube-node-lease cert-manager.io/disable-validation=true
+kubectl label namespace kube-public cert-manager.io/disable-validation=true
+kubectl label namespace kube-sentinel cert-manager.io/disable-validation=true
+kubectl label namespace kube-system cert-manager.io/disable-validation=true
+
+#cert-manager
+helm install cert-manager -n kube-public jetstack/cert-manager
 ```
 
 
@@ -167,7 +181,7 @@ serviceAccount:
   create: false
 EOF
 
-helm install team --namespace aks-team-ranger -f example/team-dashboard.yaml kubernetes-dashboard/kubernetes-dashboard
+helm install team --namespace aks-team-ranger -f dashb.yaml kubernetes-dashboard/kubernetes-dashboard
 ```
 
 
