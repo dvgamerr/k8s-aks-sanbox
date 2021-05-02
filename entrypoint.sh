@@ -4,6 +4,12 @@
 # AZURE_SERVICE_TENANT_ID=817e531d-191b-4cf5-8812-f0061d89b53d
 # TEAM_DISPLAY_NAME=AKS Team Ranger
 
+NOTIFY='https://notice.touno.io/notify/aks/sandbox'
+
+labelKey="app.kubernetes.io/controller"
+labelValue="assign-team"
+labels="$labelKey: $labelValue"
+
 mkdir -p ./config
 
 az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET -t $AZURE_SERVICE_TENANT_ID
@@ -21,14 +27,22 @@ objectId=$(echo $tsv | awk '{print $1}')
 mail=$(echo $tsv | awk '{print $3}')
 mail=${mail,,}
 
+curl -X PUT $NOTIFY -H 'Content-Type: application/json' \
+  -d "{\"message\":\"*[sandbox]* Initializing\n*TEAM:* $display ($name)\n*Email:* $mail\"}" 
+
 saName="team-$name"
+saDashboard="$saName-dashboard"
 roleName="team:$name"
 
+roleDashboardView="user:dashboard:view"
+roleNamespaceView="user:namespaces:view"
 cat > config/role.user.yaml <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: user:dashboard:view
+  name: $roleDashboardView
+  labels:
+    $labels
 rules:
 - apiGroups: ["", "storage.k8s.io"]
   resources: ["persistentvolumes", "storageclasses"]
@@ -40,9 +54,121 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: user:namespaces:view
+  name: $roleNamespaceView
+  labels:
+    $labels
 rules:
 - apiGroups: [""]
   resources: ["namespaces"]
   verbs: ["get", "list"]
 EOF
+
+kubectl apply config/role.user.yaml
+
+cat > config/role.team.yaml <<EOF
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: $name
+  labels:
+    $labels
+    team: $name
+    $name: ''
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: $saName
+  namespace: $name
+  labels:
+    $labels
+    team: $name
+    $name: ''
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: $saDashboard
+  namespace: $name
+  labels:
+    $labels
+    team: $name
+    $name: ''
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: $roleName:admin
+  namespace: $name
+  labels:
+    $labels
+    team: $name
+    $name: ''
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: $roleName:admin
+  namespace: $name
+  labels:
+    $labels
+    team: $name
+    $name: ''
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: $roleName:admin
+subjects:
+- kind: Group
+  name: $objectId
+- kind: ServiceAccount
+  name: $saName
+  namespace: $name
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: $roleName:admin
+  labels:
+    $labels
+    team: $name
+    $name: ''
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: $roleDashboardView
+subjects:
+- kind: Group
+  name: $objectId
+- kind: ServiceAccount
+  name: $saDashboard
+  namespace: $name
+- kind: ServiceAccount
+  name: $saName
+  namespace: $name
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: $roleName:ns
+  labels:
+    $labels
+    team: $name
+    $name: ''
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: $roleNamespaceView
+subjects:
+- kind: Group
+  name: $objectId
+- kind: ServiceAccount
+  name: $saName
+  namespace: $name
+EOF
+
+kubectl apply config/role.team.yaml

@@ -55,10 +55,6 @@ helm install cert-manager -n kube-public jetstack/cert-manager
 az login --service-principal -u 78470f79-20c1-4651-9cb5-f0999edb5871 -p tq6r8W-FaZ6_j.TaF-aOWLq4u_O03t~Cq0 -t 817e531d-191b-4cf5-8812-f0061d89b53d
 
 tsv=$(az ad group show --group "AKS Team Ranger" --query "{id:objectId,name:mailNickname,mail:mail}" -o tsv)
-if [ $? -eq 0 ] then
-  exit $?
-fi
-
 
 objectId=$(echo $tsv | awk '{print $1}')
 name=$(echo $tsv | awk '{print $2}')
@@ -84,15 +80,27 @@ mail=${mail,,}
 saName="team-$name"
 roleName="team:$name"
 
-cat > user.yaml <<EOF
+cat > role.user.yaml <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name:   
+  name: user:dashboard:view
 rules:
 - apiGroups: ["", "storage.k8s.io"]
-  resources: ["nodes", "persistentvolumes", "namespaces", "storageclasses"]
-  verbs: ["list"]
+  resources: ["persistentvolumes", "storageclasses"]
+  verbs: ["get", "list"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: user:namespaces:view
+rules:
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list"]
 EOF
 
 cat > role.yaml <<EOF
