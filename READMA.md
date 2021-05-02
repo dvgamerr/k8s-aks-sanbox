@@ -26,8 +26,8 @@ helm repo add jetstack https://charts.jetstack.io
 helm repo update
 
 
-helm install kubecost kubecost/cost-analyzer -n kube-system --set kubecostToken="aW5mby5kdmdhbWVyQGdtYWlsLmNvbQ==xm343yadf98"
-# helm upgrade kubecost kubecost/cost-analyzer -n kube-system
+helm install kubecost -n kube-system kubecost/cost-analyzer --set kubecostToken="aW5mby5kdmdhbWVyQGdtYWlsLmNvbQ==xm343yadf98"
+# helm upgrade kubecost -n kube-system kubecost/cost-analyzer
 
 ### check kubecost dashboard 
 # kubectl port-forward --namespace kube-system deployment/kubecost-cost-analyzer 9090
@@ -55,14 +55,14 @@ helm install cert-manager -n kube-public jetstack/cert-manager
 az login --service-principal -u 78470f79-20c1-4651-9cb5-f0999edb5871 -p tq6r8W-FaZ6_j.TaF-aOWLq4u_O03t~Cq0 -t 817e531d-191b-4cf5-8812-f0061d89b53d
 
 tsv=$(az ad group show --group "AKS Team Ranger" --query "{id:objectId,name:mailNickname,mail:mail}" -o tsv)
+if [ $? -eq 0 ] then
+  exit $?
+fi
+
+
 objectId=$(echo $tsv | awk '{print $1}')
 name=$(echo $tsv | awk '{print $2}')
 mail=$(echo $tsv | awk '{print $3}')
-```
-
-get ObjectId in User
-```bash
-az ad group member list --group AZ_PRODUCTMGMT_TEAM --query "[?contains(mail,'ThKananek@central.co.th')].objectId" -o tsv
 ```
 
 Role 
@@ -73,8 +73,9 @@ Role
 # name=$(echo $tsv | awk '{print $2}')
 # display=$(echo $tsv | awk '{print $3}')
 # mail=$(echo $tsv | awk '{print $4}')
-display="AKS Team Ranger"
-name="$(sed -e 's/\s/\-/g' <<< "${display,,}")"
+
+display="Slick - Checkout"
+name="$(sed -e 's/ \| \| - \| - /-/g' <<< "${display,,}")"
 objectId="6d39199b-2dd6-43f4-92d6-7874d1435285"
 mail="aksteamranger@central.co.th"
 mail=${mail,,}
@@ -83,14 +84,14 @@ mail=${mail,,}
 saName="team-$name"
 roleName="team:$name"
 
-cat > ns-list.yaml <<EOF
+cat > user.yaml <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: user:namespaces:list
+  name:   
 rules:
-- apiGroups: [""]
-  resources: ["namespaces"]
+- apiGroups: ["", "storage.k8s.io"]
+  resources: ["nodes", "persistentvolumes", "namespaces", "storageclasses"]
   verbs: ["list"]
 EOF
 
@@ -142,7 +143,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: user:namespaces:list
+  name: user:default:list
 subjects:
 - kind: Group
   name: $objectId
@@ -152,26 +153,18 @@ subjects:
 EOF
 
 
-cat > team-dashboard.yaml <<EOF
+cat > team.yaml <<EOF
 image:
   repository: kubernetesui/dashboard
-  tag: v2.0.3
 
-ingress:
-  enabled: true
-  paths:
-    - /$name
-  hosts:
-    - k8s.touno.io
-    
-extraArgs:
-  - --enable-skip-login
-  - --system-banner="$display"
-  - --namespace=default
-  - --namespace=$name
+protocolHttp: true
   
+extraArgs:
+  - --namespace=aks-team-ranger
+  - --enable-skip-login
+
 metricsScraper:
-  enabled: false
+  enabled: true
 
 rbac:
   create: false
@@ -179,9 +172,16 @@ rbac:
 
 serviceAccount:
   create: false
+  name: team-aks-team-ranger
+
+settings:
+  clusterName: "AKS Team Ranger"
+  itemsPerPage: 20
+  resourceAutoRefreshTimeInterval: 5
+  disableAccessDeniedNotifications: false
 EOF
 
-helm install team --namespace aks-team-ranger -f dashb.yaml kubernetes-dashboard/kubernetes-dashboard
+helm install team -n aks-team-ranger -f team.yaml kubernetes-dashboard/kubernetes-dashboard
 ```
 
 
@@ -190,6 +190,7 @@ helm install team --namespace aks-team-ranger -f dashb.yaml kubernetes-dashboard
 **Copter**
 [ ] สร้าง แค่ PVC ใน ss ชื่อ aks-team-ranger เพื่อเช็ค pv auto create
 [ ] list ns ด้วยคำสั่ง `kubectl get ns -l aks-team-ranger` ซึ่งอาจจะใช้ verb `watch` ทำงาน
+[ ] รับ add `Leaderboards` wakatime ใน email.
 
 **Kat**
 [ ] ปรับ azure storage จาก Hot เป็น *cool* ที่ `pvc/configfile`

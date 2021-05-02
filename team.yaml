@@ -1,26 +1,26 @@
 image:
   repository: kubernetesui/dashboard
-  tag: v2.2.0
 
-ingress:
-  enabled: true
-  paths:
-    - /aks-team-ranger
+protocolHttp: true
 
-  hosts:
-    - sanbox.aks-team.touno.io
-  tls:
-    - secretName: sanbox.aks-team
-      hosts:
-        - sanbox.aks-team.touno.io
+# ingress:
+#   enabled: false
+#   paths:
+#     - /aks-team-ranger
+#   hosts:
+#     - sanbox.aks-team.touno.io
+#   tls:
+#     - secretName: sanbox.aks-team
+#       hosts:
+#         - sanbox.aks-team.touno.io
 
-  annotations:
-    kubernetes.io/ingress.class: dashboard
-    cert-manager.io/cluster-issuer: letsencrypt
+#   annotations:
+#     kubernetes.io/ingress.class: dashboard
+#     cert-manager.io/cluster-issuer: letsencrypt
   
 extraArgs:
+  - --namespace=aks-team-ranger
   - --enable-skip-login
-  - --enable-insecure-login
 
 metricsScraper:
   enabled: true
@@ -35,6 +35,9 @@ serviceAccount:
 
 settings:
   clusterName: "AKS Team Ranger"
+  defaultNamespace: "aks-team-ranger"
   itemsPerPage: 20
   resourceAutoRefreshTimeInterval: 5
-  # disableAccessDeniedNotifications: false
+  disableAccessDeniedNotifications: true
+  namespaceFallbackList:
+    - aks-team-ranger

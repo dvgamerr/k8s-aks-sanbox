@@ -45,7 +45,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: user:namespaces:list
+  name: user:default:list
 subjects:
 - kind: Group
   name: 6d39199b-2dd6-43f4-92d6-7874d1435285
