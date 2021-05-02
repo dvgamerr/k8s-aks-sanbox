@@ -1,0 +1,27 @@
+image:
+  repository: kubernetesui/dashboard
+
+protocolHttp: true
+  
+extraArgs:
+  - --enable-skip-login
+
+metricsScraper:
+  enabled: true
+
+rbac:
+  create: false
+  clusterRoleMetrics: false
+
+serviceAccount:
+  create: false
+  name: team-slick-checkout-dashboard
+
+settings:
+  clusterName: Slick - Checkout
+  defaultNamespace: slick-checkout
+  itemsPerPage: 20
+  resourceAutoRefreshTimeInterval: 5
+  disableAccessDeniedNotifications: true
+  namespaceFallbackList:
+    - slick-checkout

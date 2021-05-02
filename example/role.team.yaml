@@ -58,6 +58,9 @@ subjects:
 - kind: Group
   name: 6d39199b-2dd6-43f4-92d6-7874d1435285
 - kind: ServiceAccount
+  name: team-slick-checkout-dashboard
+  namespace: slick-checkout
+- kind: ServiceAccount
   name: team-slick-checkout
   namespace: slick-checkout
 ---

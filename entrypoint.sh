@@ -3,8 +3,21 @@
 # AZURE_CLIENT_SECRET=tq6r8W-FaZ6_j.TaF-aOWLq4u_O03t~Cq0
 # AZURE_SERVICE_TENANT_ID=817e531d-191b-4cf5-8812-f0061d89b53d
 # TEAM_DISPLAY_NAME=AKS Team Ranger
+# TEAM_NAMESPACE=
 
 NOTIFY='https://notice.touno.io/notify/aks/sandbox'
+
+if [ $AZURE_CLIENT_ID -eq "" ] then
+  exit 1
+fi
+
+if [ $AZURE_CLIENT_SECRET -eq "" ] then
+  exit 1
+fi
+
+if [ $AZURE_SERVICE_TENANT_ID -eq "" ] then
+  exit 1
+fi
 
 labelKey="app.kubernetes.io/controller"
 labelValue="assign-team"
@@ -21,7 +34,12 @@ fi
 az ad group show --group "$TEAM_DISPLAY_NAME" -o json > config/team-group.json
 
 display=$TEAM_DISPLAY_NAME
-name="$(sed -e 's/ \| \| - \| - /-/g' <<< "${display,,}")"
+team="$(sed -e 's/ \| \| - \| - /-/g' <<< "${display,,}")"
+name=$TEAM_NAMESPACE
+if [ $TEAM_NAMESPACE -eq "" ] then
+  name=$team
+fi
+
 
 objectId=$(echo $tsv | awk '{print $1}')
 mail=$(echo $tsv | awk '{print $3}')
@@ -62,8 +80,6 @@ rules:
   resources: ["namespaces"]
   verbs: ["get", "list"]
 EOF
-
-kubectl apply config/role.user.yaml
 
 cat > config/role.team.yaml <<EOF
 apiVersion: v1
@@ -126,6 +142,9 @@ subjects:
 - kind: Group
   name: $objectId
 - kind: ServiceAccount
+  name: $saDashboard
+  namespace: $name
+- kind: ServiceAccount
   name: $saName
   namespace: $name
 ---
@@ -146,10 +165,10 @@ subjects:
   name: $objectId
 - kind: ServiceAccount
   name: $saDashboard
-  namespace: $name
+  namespace: $team
 - kind: ServiceAccount
   name: $saName
-  namespace: $name
+  namespace: $team
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -168,7 +187,51 @@ subjects:
   name: $objectId
 - kind: ServiceAccount
   name: $saName
-  namespace: $name
+  namespace: $team
 EOF
 
-kubectl apply config/role.team.yaml
+cat > config/team.yaml <<EOF
+image:
+  repository: kubernetesui/dashboard
+
+protocolHttp: true
+  
+extraArgs:
+  - --enable-skip-login
+
+metricsScraper:
+  enabled: true
+
+rbac:
+  create: false
+  clusterRoleMetrics: false
+
+serviceAccount:
+  create: false
+  name: $saDashboard
+
+settings:
+  clusterName: $display
+  defaultNamespace: $name
+  itemsPerPage: 20
+  resourceAutoRefreshTimeInterval: 5
+  disableAccessDeniedNotifications: true
+  namespaceFallbackList:
+    - $name
+EOF
+
+curl -X PUT $NOTIFY -H 'Content-Type: application/json' \
+  -d "{\"message\":\"*[sandbox]* Rolebinding... \"}" 
+
+kubectl apply -f config/role.user.yaml
+kubectl apply -f config/role.team.yaml
+
+curl -X PUT $NOTIFY -H 'Content-Type: application/json' \
+  -d "{\"message\":\"*[sandbox]* Dashboard creating...\"}" 
+
+helm install team -n $name -f config/team.yaml kubernetes-dashboard/kubernetes-dashboard
+
+kubectl create secret generic $saName \
+  --from-file=role-user=config/role.user.yaml \
+  --from-file=role-team=config/role.team.yaml \
+  --from-file=dashboard=config/team.yaml
