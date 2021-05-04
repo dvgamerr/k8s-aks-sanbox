@@ -1,52 +1,59 @@
-#!/usr/bin/bash
+#!/bin/bash
 # AZURE_CLIENT_ID=78470f79-20c1-4651-9cb5-f0999edb587
 # AZURE_CLIENT_SECRET=tq6r8W-FaZ6_j.TaF-aOWLq4u_O03t~Cq0
 # AZURE_SERVICE_TENANT_ID=817e531d-191b-4cf5-8812-f0061d89b53d
 # TEAM_DISPLAY_NAME=AKS Team Ranger
 # TEAM_NAMESPACE=
 
-NOTIFY='https://notice.touno.io/notify/aks/sandbox'
+WORKDIR=/sandbox/config
+# NOTIFY='https://notice.touno.io/notify/aks/sandbox'
 
-if [ $AZURE_CLIENT_ID -eq "" ] then
-  exit 1
-fi
+# if [ $AZURE_CLIENT_ID -eq "" ] then
+#   exit 1
+# fi
 
-if [ $AZURE_CLIENT_SECRET -eq "" ] then
-  exit 1
-fi
+# if [ $AZURE_CLIENT_SECRET -eq "" ] then
+#   exit 1
+# fi
 
-if [ $AZURE_SERVICE_TENANT_ID -eq "" ] then
-  exit 1
-fi
+# if [ $AZURE_SERVICE_TENANT_ID -eq "" ] then
+#   exit 1
+# fi
 
 labelKey="app.kubernetes.io/controller"
 labelValue="assign-team"
 labels="$labelKey: $labelValue"
 
-mkdir -p ./config
+mkdir -p $WORKDIR
 
-az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET -t $AZURE_SERVICE_TENANT_ID
+# az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET -t $AZURE_SERVICE_TENANT_ID
 
-tsv=$(az ad group show --group "$TEAM_DISPLAY_NAME" --query "{id:objectId,name:mailNickname,mail:mail}" -o tsv)
-if [ $? -eq 0 ] then
-  exit $?
-fi
-az ad group show --group "$TEAM_DISPLAY_NAME" -o json > config/team-group.json
+# tsv=$(az ad group show --group "$TEAM_DISPLAY_NAME" --query "{id:objectId,name:mailNickname,mail:mail}" -o tsv)
+# if [ $? -eq 0 ] then
+#   exit $?
+# fi
+# az ad group show --group "$TEAM_DISPLAY_NAME" -o json > $WORKDIR/team-group.json
+
+#### Example Data ####
+TEAM_DISPLAY_NAME="Slick - Checkout"
+TEAM_NAMESPACE="gwp-promotion"
+tsv="ea696194-d9bb-411d-8349-9a29c9ea5704    SlickTEAM       SlickTEAM@central.co.th"
+#### Example Data ####
 
 display=$TEAM_DISPLAY_NAME
 team="$(sed -e 's/ \| \| - \| - /-/g' <<< "${display,,}")"
 name=$TEAM_NAMESPACE
-if [ $TEAM_NAMESPACE -eq "" ] then
+
+if [ ["$TEAM_NAMESPACE" -eq ""] ] then
   name=$team
 fi
-
 
 objectId=$(echo $tsv | awk '{print $1}')
 mail=$(echo $tsv | awk '{print $3}')
 mail=${mail,,}
 
-curl -X PUT $NOTIFY -H 'Content-Type: application/json' \
-  -d "{\"message\":\"*[sandbox]* Initializing\n*TEAM:* $display ($name)\n*Email:* $mail\"}" 
+# curl -X PUT $NOTIFY -H 'Content-Type: application/json' \
+#   -d "{\"message\":\"*[sandbox]* Initializing\n*TEAM:* $display ($name)\n*Email:* $mail\"}" 
 
 saName="team-$name"
 saDashboard="$saName-dashboard"
@@ -54,7 +61,7 @@ roleName="team:$name"
 
 roleDashboardView="user:dashboard:view"
 roleNamespaceView="user:namespaces:view"
-cat > config/role.user.yaml <<EOF
+cat > $WORKDIR/role.user.yaml <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -81,15 +88,15 @@ rules:
   verbs: ["get", "list"]
 EOF
 
-cat > config/role.team.yaml <<EOF
+cat > $WORKDIR/role.team.yaml <<EOF
 apiVersion: v1
 kind: Namespace
 metadata:
   name: $name
   labels:
     $labels
-    team: $name
-    $name: ''
+    team: $team
+    $team: ''
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -98,8 +105,8 @@ metadata:
   namespace: $name
   labels:
     $labels
-    team: $name
-    $name: ''
+    team: $team
+    $team: ''
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -108,8 +115,8 @@ metadata:
   namespace: $name
   labels:
     $labels
-    team: $name
-    $name: ''
+    team: $team
+    $team: ''
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -118,8 +125,8 @@ metadata:
   namespace: $name
   labels:
     $labels
-    team: $name
-    $name: ''
+    team: $team
+    $team: ''
 rules:
 - apiGroups: ["*"]
   resources: ["*"]
@@ -132,8 +139,8 @@ metadata:
   namespace: $name
   labels:
     $labels
-    team: $name
-    $name: ''
+    team: $team
+    $team: ''
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -154,8 +161,8 @@ metadata:
   name: $roleName:admin
   labels:
     $labels
-    team: $name
-    $name: ''
+    team: $team
+    $team: ''
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -176,8 +183,8 @@ metadata:
   name: $roleName:ns
   labels:
     $labels
-    team: $name
-    $name: ''
+    team: $team
+    $team: ''
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -190,7 +197,7 @@ subjects:
   namespace: $team
 EOF
 
-cat > config/team.yaml <<EOF
+cat > $WORKDIR/team.yaml <<EOF
 image:
   repository: kubernetesui/dashboard
 
@@ -220,18 +227,23 @@ settings:
     - $name
 EOF
 
-curl -X PUT $NOTIFY -H 'Content-Type: application/json' \
-  -d "{\"message\":\"*[sandbox]* Rolebinding... \"}" 
+# curl -X PUT $NOTIFY -H 'Content-Type: application/json' \
+#   -d "{\"message\":\"*[sandbox]* Rolebinding... \"}" 
 
-kubectl apply -f config/role.user.yaml
-kubectl apply -f config/role.team.yaml
+# kubectl apply -f $WORKDIR/role.user.yaml
+# kubectl apply -f $WORKDIR/role.team.yaml
 
-curl -X PUT $NOTIFY -H 'Content-Type: application/json' \
-  -d "{\"message\":\"*[sandbox]* Dashboard creating...\"}" 
+# kubectl create secret generic $saName \
+#   --from-file=role-user=$WORKDIR/role.user.yaml \
+#   --from-file=role-team=$WORKDIR/role.team.yaml \
+#   --from-file=dashboard=$WORKDIR/team.yaml
 
-helm install team -n $name -f config/team.yaml kubernetes-dashboard/kubernetes-dashboard
+# if [ $TEAM_NAMESPACE -eq "" ] then
+#   curl -X PUT $NOTIFY -H 'Content-Type: application/json' \
+#     -d "{\"message\":\"*[sandbox]* Dashboard creating...\"}" 
+#   helm install team -n $name -f $WORKDIR/team.yaml kubernetes-dashboard/kubernetes-dashboard
+# fi
 
-kubectl create secret generic $saName \
-  --from-file=role-user=config/role.user.yaml \
-  --from-file=role-team=config/role.team.yaml \
-  --from-file=dashboard=config/team.yaml
+kubectl -n $team get cm/kubernetes-dashboard-settings -o json | \
+  jq '.data._global | fromjson' | \
+  jq -rc ".namespaceFallbackList[.namespaceFallbackList | length] |= . + \"$name\"" > _global.json

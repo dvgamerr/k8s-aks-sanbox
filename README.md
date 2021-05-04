@@ -23,7 +23,7 @@ helm repo add kubecost https://kubecost.github.io/cost-analyzer/
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
 helm repo add jetstack https://charts.jetstack.io
-helm repo update
+helm repo update  
 
 
 helm install kubecost -n kube-system kubecost/cost-analyzer --set kubecostToken="aW5mby5kdmdhbWVyQGdtYWlsLmNvbQ==xm343yadf98"

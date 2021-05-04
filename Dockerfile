@@ -1,11 +1,16 @@
 FROM centos:8
 LABEL maintainer="Kananek Thongkam"
 
+RUN useradd -ms /bin/bash daemon
+
+USER daemon
 WORKDIR /tmp
 
-# Installation azure-cli
 RUN yum upgrade -y && \
-    rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
+    yum install jq -y
+
+# Installation azure-cli
+RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc && \
     echo -e "[azure-cli]\n\
 name=Azure CLI\n\
 baseurl=https://packages.microsoft.com/yumrepos/azure-cli\n\
@@ -25,7 +30,7 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master
 
 WORKDIR /workbranch
 
-COPY . .
+COPY entrypoint.sh .
 
 RUN rm -Rf /tmp
 
