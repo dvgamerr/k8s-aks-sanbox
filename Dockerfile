@@ -1,9 +1,10 @@
 FROM centos:8
+LABEL image="ris-sandbox-team"
 LABEL maintainer="Kananek Thongkam"
 
-RUN useradd -ms /bin/bash daemon
+RUN useradd -ms /bin/bash k8s
 
-USER daemon
+USER k8s
 WORKDIR /tmp
 
 RUN yum upgrade -y && \
@@ -30,6 +31,7 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master
 
 WORKDIR /workbranch
 
+COPY sa.json .
 COPY entrypoint.sh .
 
 RUN rm -Rf /tmp

@@ -3,20 +3,8 @@ image:
 
 protocolHttp: true
 
-# ingress:
-#   enabled: false
-#   paths:
-#     - /aks-team-ranger
-#   hosts:
-#     - sanbox.aks-team.touno.io
-#   tls:
-#     - secretName: sanbox.aks-team
-#       hosts:
-#         - sanbox.aks-team.touno.io
-
-#   annotations:
-#     kubernetes.io/ingress.class: dashboard
-#     cert-manager.io/cluster-issuer: letsencrypt
+ingress:
+  enabled: false
   
 extraArgs:
   - --namespace=aks-team-ranger

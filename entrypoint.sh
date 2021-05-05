@@ -202,8 +202,12 @@ image:
   repository: kubernetesui/dashboard
 
 protocolHttp: true
+
+ingress:
+  enabled: false
   
 extraArgs:
+  - --namespace=$name
   - --enable-skip-login
 
 metricsScraper:

@@ -43,7 +43,8 @@ kubectl label namespace kube-sentinel cert-manager.io/disable-validation=true
 kubectl label namespace kube-system cert-manager.io/disable-validation=true
 
 #cert-manager
-helm install cert-manager -n kube-public jetstack/cert-manager
+helm install cert-manager -n kube-public jetstack/cert-manager --version v0.13.0
+
 ```
 
 
@@ -74,10 +75,8 @@ helm install team -n aks-team-ranger -f team.yaml kubernetes-dashboard/kubernete
 **Copter**
 [ ] สร้าง แค่ PVC ใน ss ชื่อ aks-team-ranger เพื่อเช็ค pv auto create
 [ ] list ns ด้วยคำสั่ง `kubectl get ns -l aks-team-ranger` ซึ่งอาจจะใช้ verb `watch` ทำงาน
-[ ] รับ add `Leaderboards` wakatime ใน email.
 
 **Kat**
-[ ] ปรับ azure storage จาก Hot เป็น *cool* ที่ `pvc/configfile`
 [ ] ขอ service principle ที่ สามารถดึง group show `az ad group show`
 
 **Amp**

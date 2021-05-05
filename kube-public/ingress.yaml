@@ -1,0 +1,80 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+  namespace: aks-team-ranger
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: info.dvgamer@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt
+    solvers:
+    - http01:
+        ingress:
+          class:  dashboard
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: sandbox-aks-team-ranger
+  namespace: aks-team-ranger
+  annotations:
+    kubernetes.io/ingress.class: "dashboard"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    cert-manager.io/cluster-issuer: "letsencrypt"
+spec:
+  tls:
+  - hosts:
+    - sandbox.aks-team.touno.io
+    secretName: sandbox.aks-team
+  rules:
+  - host: sandbox.aks-team.touno.io
+    http:
+      paths:
+      - path: /aks-team-ranger(/|$)(.*)
+        pathType: Prefix
+        backend:
+          serviceName: team-kubernetes-dashboard
+          servicePort: 443
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: sandbox-slick-checkout
+  namespace: slick-checkout
+  annotations:
+    kubernetes.io/ingress.class: "dashboard"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    cert-manager.io/cluster-issuer: "letsencrypt"
+spec:
+  tls:
+  - hosts:
+    - sandbox.aks-team.touno.io
+    secretName: sandbox.aks-team
+  rules:
+  - host: sandbox.aks-team.touno.io
+    http:
+      paths:
+      - path: /slick-checkout(/|$)(.*)
+        pathType: Prefix
+        backend:
+          serviceName: team-kubernetes-dashboard
+          servicePort: 443
+
+# ---
+# apiVersion: extensions/v1beta1
+# kind: Ingress
+# metadata:
+#   name: example-ingress
+#   annotations:
+#     kubernetes.io/ingress.class: "nginx"
+# spec:
+#   rules:
+#   - host: example.com
+#     http:
+#       paths:
+#       - path: /
+#         backend:
+#           serviceName: my-service
+#           servicePort: 80
