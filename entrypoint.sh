@@ -6,7 +6,7 @@
 # TEAM_NAMESPACE=
 
 WORKDIR=/sandbox/config
-# NOTIFY='https://notice.touno.io/notify/aks/sandbox'
+NOTIFY='https://notice.touno.io/notify/aks/sandbox'
 
 # if [ $AZURE_CLIENT_ID -eq "" ] then
 #   exit 1
@@ -35,16 +35,16 @@ mkdir -p $WORKDIR
 # az ad group show --group "$TEAM_DISPLAY_NAME" -o json > $WORKDIR/team-group.json
 
 #### Example Data ####
-TEAM_DISPLAY_NAME="Slick - Checkout"
-TEAM_NAMESPACE="gwp-promotion"
-tsv="ea696194-d9bb-411d-8349-9a29c9ea5704    SlickTEAM       SlickTEAM@central.co.th"
+TEAM_DISPLAY_NAME="Product - Slick Admin"
+# TEAM_NAMESPACE="gwp-promotion"
+tsv="660f0f15-f803-48bd-9061-a5de8871824c    ProductTeam-SlickAdmin       ProductTeam-SlickAdmin@central.co.th"
 #### Example Data ####
 
 display=$TEAM_DISPLAY_NAME
 team="$(sed -e 's/ \| \| - \| - /-/g' <<< "${display,,}")"
 name=$TEAM_NAMESPACE
 
-if [ ["$TEAM_NAMESPACE" -eq ""] ] then
+if ["$TEAM_NAMESPACE" -eq ""]; then
   name=$team
 fi
 
@@ -52,8 +52,8 @@ objectId=$(echo $tsv | awk '{print $1}')
 mail=$(echo $tsv | awk '{print $3}')
 mail=${mail,,}
 
-# curl -X PUT $NOTIFY -H 'Content-Type: application/json' \
-#   -d "{\"message\":\"*[sandbox]* Initializing\n*TEAM:* $display ($name)\n*Email:* $mail\"}" 
+curl -s -X PUT $NOTIFY -H 'Content-Type: application/json' \
+  -d "{\"message\":\"*[sandbox]* Initializing\n*TEAM:* $display ($name)\n*Email:* $mail\"}" > /dev/null
 
 saName="team-$name"
 saDashboard="$saName-dashboard"
@@ -231,8 +231,34 @@ settings:
     - $name
 EOF
 
-# curl -X PUT $NOTIFY -H 'Content-Type: application/json' \
-#   -d "{\"message\":\"*[sandbox]* Rolebinding... \"}" 
+cat > $WORKDIR/ingress.yaml <<EOF
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: sandbox-$name
+  namespace: $name
+  annotations:
+    kubernetes.io/ingress.class: "dashboard"
+    nginx.ingress.kubernetes.io/rewrite-target: /\$2
+    cert-manager.io/cluster-issuer: "letsencrypt"
+spec:
+  tls:
+  - hosts:
+    - sandbox.aks-team.touno.io
+    secretName: sandbox.aks-team
+  rules:
+  - host: sandbox.aks-team.touno.io
+    http:
+      paths:
+      - path: /$name(/|$)(.*)
+        pathType: Prefix
+        backend:
+          serviceName: team-kubernetes-dashboard
+          servicePort: 443
+EOF
+
+curl -s -X PUT $NOTIFY -H 'Content-Type: application/json' \
+  -d "{\"message\":\"*[sandbox]* Rolebinding... \"}" > /dev/null
 
 # kubectl apply -f $WORKDIR/role.user.yaml
 # kubectl apply -f $WORKDIR/role.team.yaml
@@ -242,12 +268,13 @@ EOF
 #   --from-file=role-team=$WORKDIR/role.team.yaml \
 #   --from-file=dashboard=$WORKDIR/team.yaml
 
-# if [ $TEAM_NAMESPACE -eq "" ] then
-#   curl -X PUT $NOTIFY -H 'Content-Type: application/json' \
-#     -d "{\"message\":\"*[sandbox]* Dashboard creating...\"}" 
-#   helm install team -n $name -f $WORKDIR/team.yaml kubernetes-dashboard/kubernetes-dashboard
-# fi
+if ["$TEAM_NAMESPACE" -eq ""]; then
+  curl -s -X PUT $NOTIFY -H 'Content-Type: application/json' \
+    -d "{\"message\":\"*[sandbox]* Dashboard creating...\"}" > /dev/null
+  # helm install team -n $name -f $WORKDIR/team.yaml kubernetes-dashboard/kubernetes-dashboard
+fi
 
-kubectl -n $team get cm/kubernetes-dashboard-settings -o json | \
-  jq '.data._global | fromjson' | \
-  jq -rc ".namespaceFallbackList[.namespaceFallbackList | length] |= . + \"$name\"" > _global.json
+
+# kubectl -n $team get cm/kubernetes-dashboard-settings -o json | \
+#   jq '.data._global | fromjson' | \
+#   jq -rc ".namespaceFallbackList[.namespaceFallbackList | length] |= . + \"$name\"" > _global.json
