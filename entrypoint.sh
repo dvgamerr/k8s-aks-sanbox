@@ -263,10 +263,11 @@ curl -s -X PUT $NOTIFY -H 'Content-Type: application/json' \
 # kubectl apply -f $WORKDIR/role.user.yaml
 # kubectl apply -f $WORKDIR/role.team.yaml
 
-# kubectl create secret generic $saName \
+# kubectl create secret generic $saName -n $team \
 #   --from-file=role-user=$WORKDIR/role.user.yaml \
 #   --from-file=role-team=$WORKDIR/role.team.yaml \
-#   --from-file=dashboard=$WORKDIR/team.yaml
+#   --from-file=dashboard=$WORKDIR/team.yaml \
+#   --from-file=ingress=$WORKDIR/ingress.yaml
 
 if ["$TEAM_NAMESPACE" -eq ""]; then
   curl -s -X PUT $NOTIFY -H 'Content-Type: application/json' \
