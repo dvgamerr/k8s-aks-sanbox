@@ -275,7 +275,6 @@ if ["$TEAM_NAMESPACE" -eq ""]; then
   # helm install team -n $name -f $WORKDIR/team.yaml kubernetes-dashboard/kubernetes-dashboard
 fi
 
-
 # kubectl -n $team get cm/kubernetes-dashboard-settings -o json | \
 #   jq '.data._global | fromjson' | \
 #   jq -rc ".namespaceFallbackList[.namespaceFallbackList | length] |= . + \"$name\"" > _global.json

@@ -52,6 +52,9 @@ kubectl label namespace kube-system cert-manager.io/disable-validation=true
 
 #cert-manager
 helm install cert-manager -n kube-public jetstack/cert-manager --version v0.13.0
+
+# Ingress TOUNO.io
+helm install k8s -n kube-public haproxytech/kubernetes-ingress --set controller.service.type=LoadBalancer --set controller.ingressClass=touno-io
 ```
 
 ### Role & Rolebinding AKS

@@ -13,22 +13,36 @@ spec:
         ingress:
           class: dashboard
 ---
-apiVersion: cert-manager.io/v1
-kind: Issuer
+apiVersion: cert-manager.io/v1alpha2
+kind: ClusterIssuer
 metadata:
-  name: test-selfsigned
-  namespace: aks-team-ranger
+  name: letsencrypt
 spec:
-  selfSigned: {}
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: selfsigned-cert
-  namespace: aks-team-ranger
-spec:
-  dnsNames:
-    - example.com
-  secretName: selfsigned-cert-tls
-  issuerRef:
-    name: test-selfsigned
+  acme:
+    server: <https://acme-v02.api.letsencrypt.org/directory>
+    email: info.dvgamer@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt
+    solvers:
+    - http01:
+        ingress:
+          class: touno-io
+# apiVersion: cert-manager.io/v1
+# kind: Issuer
+# metadata:
+#   name: test-selfsigned
+#   namespace: aks-team-ranger
+# spec:
+#   selfSigned: {}
+# ---
+# apiVersion: cert-manager.io/v1
+# kind: Certificate
+# metadata:
+#   name: selfsigned-cert
+#   namespace: aks-team-ranger
+# spec:
+#   dnsNames:
+#     - example.com
+#   secretName: selfsigned-cert-tls
+#   issuerRef:
+#     name: test-selfsigned
